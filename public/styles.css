@@ -1,30 +1,217 @@
+@import url("https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;600;700&family=Noto+Serif+TC:wght@600;700&display=swap");
+
 :root{
-  --bg:#ffffff; --fg:#111111; --muted:#666; --card:#f6f6f7; --border:#e5e5e7;
-  --btn:#111; --btnfg:#fff; --btn2:#666; --code:#f0f0f2;
+  --bg:#f7f2ea;
+  --bg-2:#f1ebe1;
+  --ink:#1c1b1a;
+  --muted:#6a625a;
+  --card:#fffbf5;
+  --border:#e3dbd0;
+  --accent:#2f6f6c;
+  --accent-2:#c85b3c;
+  --shadow:0 12px 30px rgba(24, 20, 16, 0.12);
+  --code:#efe7dc;
 }
+
 @media (prefers-color-scheme: dark){
   :root{
-    --bg:#0b0b0c; --fg:#f2f2f3; --muted:#a2a2aa; --card:#141417; --border:#242428;
-    --btn:#f2f2f3; --btnfg:#111; --btn2:#3a3a42; --code:#1a1a1f;
+    --bg:#0f1112;
+    --bg-2:#141718;
+    --ink:#f2efe9;
+    --muted:#b1aaa1;
+    --card:#161a1b;
+    --border:#2a2f30;
+    --accent:#6cd0c9;
+    --accent-2:#ff8d6b;
+    --shadow:0 18px 40px rgba(0, 0, 0, 0.45);
+    --code:#1f2324;
   }
 }
-html,body{background:var(--bg); color:var(--fg);}
-body{font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Helvetica,Arial,"Noto Sans TC","PingFang TC";margin:16px;line-height:1.45}
-body.mini{margin:0;padding:14px}
-.card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:14px;margin:12px 0}
-.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
-.row-mini{display:block;margin-top:10px;color:var(--muted);font-size:14px}
-input{padding:10px;border:1px solid var(--border);border-radius:12px;background:var(--bg);color:var(--fg)}
-button{padding:10px 12px;border:0;border-radius:12px;background:var(--btn);color:var(--btnfg);cursor:pointer}
-button.secondary{background:var(--btn2);color:#fff}
+
+*{box-sizing:border-box}
+html,body{height:100%}
+body{
+  margin:0;
+  color:var(--ink);
+  background:
+    radial-gradient(900px 500px at 10% -10%, rgba(200, 91, 60, 0.18), transparent 60%),
+    radial-gradient(700px 400px at 90% 10%, rgba(47, 111, 108, 0.18), transparent 60%),
+    linear-gradient(180deg, var(--bg), var(--bg-2));
+  font-family:"Noto Sans TC", system-ui, -apple-system, "Segoe UI", sans-serif;
+  line-height:1.6;
+}
+
+.page{
+  padding:28px 18px 48px;
+  max-width:980px;
+  margin:0 auto;
+  display:flex;
+  flex-direction:column;
+  gap:18px;
+}
+
+.hero{
+  display:flex;
+  flex-direction:column;
+  gap:12px;
+  animation:fadeUp 520ms ease both;
+}
+.hero-title{
+  font-family:"Noto Serif TC", "Noto Sans TC", serif;
+  font-size:30px;
+  font-weight:700;
+  letter-spacing:0.4px;
+  margin:0;
+}
+.hero-sub{
+  color:var(--muted);
+  font-size:15px;
+}
+.chip{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  padding:4px 10px;
+  border-radius:999px;
+  background:var(--code);
+  border:1px solid var(--border);
+  font-size:12px;
+  color:var(--muted);
+  width:max-content;
+}
+
+.layout{
+  display:grid;
+  grid-template-columns:1.1fr 0.9fr;
+  gap:16px;
+}
+@media (max-width:860px){
+  .layout{grid-template-columns:1fr}
+}
+
+.card{
+  background:var(--card);
+  border:1px solid var(--border);
+  border-radius:18px;
+  padding:16px;
+  box-shadow:var(--shadow);
+  animation:fadeUp 560ms ease both;
+}
+.card-title{
+  font-weight:700;
+  font-size:16px;
+  margin-bottom:8px;
+}
+
+.row{
+  display:flex;
+  gap:10px;
+  flex-wrap:wrap;
+  align-items:center;
+}
+
+.field{
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+}
+.label{
+  font-size:12px;
+  color:var(--muted);
+}
+input{
+  padding:10px 12px;
+  border:1px solid var(--border);
+  border-radius:12px;
+  background:transparent;
+  color:var(--ink);
+  min-width:120px;
+}
+input[type="search"]{width:100%}
+button{
+  padding:10px 14px;
+  border:0;
+  border-radius:12px;
+  background:var(--accent);
+  color:#fff;
+  cursor:pointer;
+  font-weight:600;
+  letter-spacing:0.2px;
+  transition:transform 140ms ease, box-shadow 140ms ease;
+  box-shadow:0 8px 18px rgba(47, 111, 108, 0.25);
+}
+button:hover{transform:translateY(-1px)}
+button.secondary{
+  background:var(--accent-2);
+  box-shadow:0 8px 18px rgba(200, 91, 60, 0.25);
+}
+button.ghost{
+  background:transparent;
+  color:var(--ink);
+  border:1px solid var(--border);
+  box-shadow:none;
+}
+
+.pill-link{
+  font-size:13px;
+  color:var(--muted);
+  text-decoration:none;
+}
+.pill-link:hover{color:var(--ink)}
+
+.summary{
+  font-size:20px;
+  font-weight:700;
+  font-family:"Noto Serif TC", "Noto Sans TC", serif;
+  margin:0 0 4px;
+}
+.meta{color:var(--muted);font-size:13px}
+
+.timeline{
+  margin-top:10px;
+  display:grid;
+  grid-template-columns:repeat(auto-fit, minmax(160px, 1fr));
+  gap:10px;
+}
+.time-card{
+  border:1px solid var(--border);
+  border-radius:14px;
+  padding:10px 12px;
+  background:linear-gradient(180deg, rgba(255,255,255,0.6), transparent);
+}
+.time-label{font-weight:700}
+.time-note{color:var(--muted);font-size:12px}
+
+.divider{height:1px;background:var(--border);margin:12px 0}
+.tips ul{margin:0;padding-left:18px;color:var(--muted)}
+.tips li{margin:6px 0}
+.alert{
+  margin-top:10px;
+  padding:10px 12px;
+  border-radius:12px;
+  background:rgba(200, 91, 60, 0.12);
+  border:1px solid rgba(200, 91, 60, 0.4);
+  color:var(--ink);
+  display:none;
+}
+
+.periods div{margin-top:8px}
 code{background:var(--code);padding:2px 6px;border-radius:8px}
-.muted{color:var(--muted)}
-.big{font-size:18px;font-weight:800}
-.big-mini{font-size:22px;font-weight:900;line-height:1.25}
-.miniLink{font-size:14px}
-pre{background:#000;color:#eee;padding:12px;border-radius:14px;overflow:auto}
-.pill{display:inline-block;padding:4px 10px;border-radius:999px;background:var(--code);color:var(--fg);border:1px solid var(--border);font-size:12px}
-.hint{font-size:13px}
-.small{margin-top:10px;font-size:14px;line-height:1.4}
+pre{background:#0f1112;color:#f1f1f1;padding:12px;border-radius:14px;overflow:auto}
+
+details summary{cursor:pointer}
+
+.mini{
+  padding:16px;
+  margin:0;
+}
+.mini .card{margin:0}
+.mini .summary{font-size:22px;line-height:1.3}
+.mini .meta{font-size:14px}
+.mini .small{margin-top:10px;font-size:14px;line-height:1.4}
 .err{color:#d33}
-a{color:inherit}
+
+@keyframes fadeUp{
+  from{opacity:0;transform:translateY(8px)}
+  to{opacity:1;transform:translateY(0)}
+}

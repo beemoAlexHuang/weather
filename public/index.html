@@ -15,50 +15,55 @@
   <link rel="stylesheet" href="/styles.css" />
 </head>
 <body>
-  <div class="row" style="justify-content:space-between;align-items:flex-end">
-    <div>
-      <div class="pill">PWA / 介面 + API</div>
-      <h2 style="margin:10px 0 0">穿搭建議</h2>
-      <div class="muted hint">API：<code>/api/outfit?lat=25.0330&lon=121.5654</code></div>
-    </div>
-    <div class="muted miniLink"><a href="/mini" style="color:inherit">開啟精簡版 /mini</a></div>
-  </div>
+  <main class="page">
+    <header class="hero">
+      <span class="chip">CWA 72hr · Outfit Planner</span>
+      <h1 class="hero-title">今天該怎麼穿？</h1>
+      <div class="hero-sub">依照中央氣象署逐時資料，給你早中晚與一套到底的穿搭建議。</div>
+      <a class="pill-link" href="/mini">開啟精簡版 /mini →</a>
+    </header>
 
-  <div class="card">
-    <div class="row">
-      <button id="btnGeo">用目前位置</button>
-      <button class="secondary" id="btnTaipei101">台北101</button>
-      <label class="muted"><input type="checkbox" id="debug" /> debug</label>
-    </div>
-
-    <div class="row" style="margin-top:10px">
-      <div>
-        <div class="muted">緯度 lat</div>
-        <input id="lat" inputmode="decimal" placeholder="25.0330" size="12" />
+    <section class="layout">
+      <div class="card">
+        <div class="card-title">搜尋縣市或使用目前位置</div>
+        <form id="searchForm" class="row" style="margin-bottom:10px">
+          <div class="field" style="flex:1 1 220px">
+            <span class="label">搜尋台灣縣市</span>
+            <input id="placeSearch" type="search" list="placeList" placeholder="例如：台北市 / 台中市 / 高雄市" />
+            <datalist id="placeList"></datalist>
+          </div>
+          <button id="btnApply" type="submit">套用</button>
+          <button class="secondary" id="btnGeo" type="button">用目前位置</button>
+        </form>
+        <div class="row" style="margin-bottom:8px">
+          <button class="ghost" id="btnTaipei101" type="button">台北101</button>
+          <label class="row" style="gap:6px;align-items:center">
+            <input type="checkbox" id="debug" />
+            <span class="label">debug</span>
+          </label>
+        </div>
+        <div class="hero-sub">iPhone：Safari → 分享 →「加入主畫面」。加入後會全螢幕開啟並顯示專屬圖示。</div>
       </div>
-      <div>
-        <div class="muted">經度 lon</div>
-        <input id="lon" inputmode="decimal" placeholder="121.5654" size="12" />
+
+      <div class="card" id="out">
+        <div class="summary" id="summary">尚未查詢</div>
+        <div class="meta" id="meta"></div>
+        <div class="timeline" id="timeline"></div>
+        <div class="periods" id="periods"></div>
+        <div class="divider"></div>
+        <div class="tips">
+          <div class="card-title">穿搭 Tips</div>
+          <ul id="tips"></ul>
+        </div>
+        <div class="alert" id="alert"></div>
       </div>
-      <button id="btnRun">查詢</button>
-      <button class="secondary" id="btnPin">儲存座標</button>
-    </div>
+    </section>
 
-    <div class="muted hint" style="margin-top:8px">
-      iPhone：Safari → 分享 →「加入主畫面」。加入後會以全螢幕開啟，並可用 apple-touch-icon 顯示更漂亮的圖示。
-    </div>
-  </div>
-
-  <div class="card" id="out">
-    <div class="big" id="summary">尚未查詢</div>
-    <div class="muted" id="meta"></div>
-    <div id="periods"></div>
-  </div>
-
-  <details class="card">
-    <summary>Raw JSON</summary>
-    <pre id="raw">{}</pre>
-  </details>
+    <details class="card">
+      <summary>Raw JSON</summary>
+      <pre id="raw">{}</pre>
+    </details>
+  </main>
 
   <script src="/app.js" defer></script>
 </body>
