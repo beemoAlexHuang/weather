@@ -96,6 +96,12 @@ async function handleApi(request, env, ctx) {
   const date = (url.searchParams.get("date") || todayInTZ(tz)).toString();
   const times = (env.TIMES ? String(env.TIMES).split(",") : DEFAULT_TIMES).map(s => s.trim()).filter(Boolean);
   const popTh = env.POP_RAIN_THRESHOLD ? Number(env.POP_RAIN_THRESHOLD) : DEFAULT_POP_RAIN_THRESHOLD;
+  const morningBias = Number(url.searchParams.get("morningBias") ?? url.searchParams.get("mb"));
+  const eveningBias = Number(url.searchParams.get("eveningBias") ?? url.searchParams.get("eb"));
+  const bias = {
+    morning: Number.isFinite(morningBias) ? morningBias : MORNING_BIAS_C,
+    evening: Number.isFinite(eveningBias) ? eveningBias : EVENING_BIAS_C,
+  };
 
   if (!env.CWA_ENDPOINT || !env.CWA_GQL_QUERY || !env.CWA_AUTH) {
     return json({ ok: false, error: "Missing env: CWA_ENDPOINT, CWA_GQL_QUERY, CWA_AUTH(secret)" }, 500, corsHeaders());
@@ -167,7 +173,7 @@ async function handleApi(request, env, ctx) {
     const popPct = pickIntervalValue_(popIntervals, targetMs);
     const wxDesc = pickIntervalDesc_(wxDescIntervals, targetMs);
 
-    const advice = outfitAdvice({ tempC, windMs, popPct, wxDesc, comfortDesc, popTh, hhmm: hh });
+    const advice = outfitAdvice({ tempC, windMs, popPct, wxDesc, comfortDesc, popTh, hhmm: hh, bias });
 
     const item = {
       label: labelOfTime(hh),
@@ -212,12 +218,12 @@ function labelOfTime(hhmm) {
   return "晚";
 }
 
-function timeBiasC(hhmm) {
+function timeBiasC(hhmm, bias) {
   const s = String(hhmm || "").trim();
   const h = parseInt(s.split(":")[0], 10);
   if (!Number.isFinite(h)) return 0;
-  if (h <= 8) return -MORNING_BIAS_C;
-  if (h >= 17) return -EVENING_BIAS_C;
+  if (h <= 8) return -(bias?.morning ?? MORNING_BIAS_C);
+  if (h >= 17) return -(bias?.evening ?? EVENING_BIAS_C);
   return 0;
 }
 
@@ -270,7 +276,7 @@ function windChillLikeC(tempC, windMs) {
   return tempC - Math.max(0, drop);
 }
 
-function calcFeelsC({ tempC, windMs, comfortDesc, wxDesc, hhmm }) {
+function calcFeelsC({ tempC, windMs, comfortDesc, wxDesc, hhmm, bias }) {
   let feels = tempC;
   feels = windChillLikeC(feels, windMs);
   feels += comfortAdjust(comfortDesc);
@@ -280,13 +286,13 @@ function calcFeelsC({ tempC, windMs, comfortDesc, wxDesc, hhmm }) {
   if (cloudy && Number.isFinite(feels) && feels >= 26) feels -= 0.3;
   if (rainy && Number.isFinite(feels)) feels -= 0.5;
 
-  feels += timeBiasC(hhmm);
+  feels += timeBiasC(hhmm, bias);
   return feels;
 }
 
-function outfitAdvice({ tempC, windMs, popPct, wxDesc, comfortDesc, popTh, hhmm }) {
+function outfitAdvice({ tempC, windMs, popPct, wxDesc, comfortDesc, popTh, hhmm, bias }) {
   const { sunny, rainy } = parseSkyFromDesc(wxDesc);
-  const feels = calcFeelsC({ tempC, windMs, comfortDesc, wxDesc, hhmm });
+  const feels = calcFeelsC({ tempC, windMs, comfortDesc, wxDesc, hhmm, bias });
   const wear = wearFromFeelsC(feels);
 
   let rain = null;

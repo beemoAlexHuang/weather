@@ -22,7 +22,12 @@
       <div class="hero-sub">依照中央氣象署逐時資料，給你早中晚與一套到底的穿搭建議。</div>
       <div class="hero-actions">
         <a class="pill-link" href="/mini">開啟精簡版 /mini →</a>
-        <button class="theme-toggle" id="themeToggle" type="button" aria-label="切換深色/淺色">
+        <button class="icon-btn" id="settingsToggle" type="button" aria-label="設定">
+          <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+            <path fill="currentColor" d="M12 8.8a3.2 3.2 0 1 1 0 6.4 3.2 3.2 0 0 1 0-6.4zm8.2 2.6-.9-.2a7.4 7.4 0 0 0-.7-1.6l.5-.8a1 1 0 0 0-.1-1.3l-1.4-1.4a1 1 0 0 0-1.3-.1l-.8.5a7.4 7.4 0 0 0-1.6-.7l-.2-.9a1 1 0 0 0-1-.8h-2a1 1 0 0 0-1 .8l-.2.9a7.4 7.4 0 0 0-1.6.7l-.8-.5a1 1 0 0 0-1.3.1L4 7.5a1 1 0 0 0-.1 1.3l.5.8a7.4 7.4 0 0 0-.7 1.6l-.9.2a1 1 0 0 0-.8 1v2c0 .5.3.9.8 1l.9.2c.2.6.4 1.1.7 1.6l-.5.8a1 1 0 0 0 .1 1.3l1.4 1.4a1 1 0 0 0 1.3.1l.8-.5c.5.3 1 .5 1.6.7l.2.9a1 1 0 0 0 1 .8h2c.5 0 .9-.3 1-.8l.2-.9c.6-.2 1.1-.4 1.6-.7l.8.5a1 1 0 0 0 1.3-.1l1.4-1.4a1 1 0 0 0 .1-1.3l-.5-.8c.3-.5.5-1 .7-1.6l.9-.2a1 1 0 0 0 .8-1v-2a1 1 0 0 0-.8-1z"/>
+          </svg>
+        </button>
+        <button class="icon-btn" id="themeToggle" type="button" aria-label="切換深色/淺色">
           <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
             <path fill="currentColor" d="M12 4.5a1 1 0 0 1 1 1v1.2a1 1 0 1 1-2 0V5.5a1 1 0 0 1 1-1zm0 12.3a1 1 0 0 1 1 1v1.2a1 1 0 1 1-2 0v-1.2a1 1 0 0 1 1-1zm7.5-4.8a1 1 0 0 1-1 1h-1.2a1 1 0 1 1 0-2h1.2a1 1 0 0 1 1 1zM7.7 12a1 1 0 0 1-1 1H5.5a1 1 0 1 1 0-2h1.2a1 1 0 0 1 1 1zm9.02-5.52a1 1 0 0 1 1.41 0l.85.85a1 1 0 1 1-1.41 1.41l-.85-.85a1 1 0 0 1 0-1.41zM6.56 17.44a1 1 0 0 1 1.41 0l.85.85a1 1 0 0 1-1.41 1.41l-.85-.85a1 1 0 0 1 0-1.41zm12.17 1.41a1 1 0 0 1-1.41 0l-.85-.85a1 1 0 1 1 1.41-1.41l.85.85a1 1 0 0 1 0 1.41zM7.41 7.41a1 1 0 0 1-1.41 0l-.85-.85a1 1 0 1 1 1.41-1.41l.85.85a1 1 0 0 1 0 1.41zM12 8a4 4 0 1 1 0 8 4 4 0 0 1 0-8z"/>
           </svg>
@@ -71,5 +76,29 @@
   </main>
 
   <script src="/app.js" defer></script>
+
+  <div class="settings-panel" id="settingsPanel" aria-hidden="true">
+    <div class="settings-card">
+      <div class="card-title">穿搭偏移設定</div>
+      <div class="field">
+        <span class="label">早晨偏移（MORNING_BIAS_C）</span>
+        <div class="row">
+          <input id="morningBias" type="range" min="-3" max="3" step="0.5" />
+          <span class="bias-value" id="morningBiasValue">0</span>
+        </div>
+      </div>
+      <div class="field" style="margin-top:10px">
+        <span class="label">晚間偏移（EVENING_BIAS_C）</span>
+        <div class="row">
+          <input id="eveningBias" type="range" min="-3" max="3" step="0.5" />
+          <span class="bias-value" id="eveningBiasValue">0</span>
+        </div>
+      </div>
+      <div class="row" style="margin-top:12px">
+        <button class="ghost" id="resetBias" type="button">重設</button>
+        <button id="closeSettings" type="button">完成</button>
+      </div>
+    </div>
+  </div>
 </body>
 </html>

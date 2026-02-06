@@ -247,7 +247,7 @@ button.ghost{
 }
 .pill-link:hover{color:var(--ink)}
 
-.theme-toggle{
+.icon-btn{
   width:40px;
   height:40px;
   border-radius:50%;
@@ -259,7 +259,32 @@ button.ghost{
   cursor:pointer;
   box-shadow:var(--shadow);
 }
-.theme-toggle svg{width:20px;height:20px}
+.icon-btn svg{width:20px;height:20px}
+
+.settings-panel{
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,0.35);
+  display:none;
+  align-items:center;
+  justify-content:center;
+  padding:18px;
+  z-index:30;
+}
+.settings-panel.active{display:flex}
+.settings-card{
+  background:var(--card);
+  border:1px solid var(--border);
+  border-radius:18px;
+  padding:16px;
+  width:min(420px, 100%);
+  box-shadow:var(--shadow);
+}
+.bias-value{
+  min-width:34px;
+  text-align:center;
+  font-weight:700;
+}
 
 .summary{
   font-size:20px;
@@ -337,4 +362,10 @@ details summary{cursor:pointer}
 @keyframes fadeUp{
   from{opacity:0;transform:translateY(8px)}
   to{opacity:1;transform:translateY(0)}
+}
+.ico{
+  width:16px;
+  height:16px;
+  vertical-align:-2px;
+  margin-right:4px;
 }

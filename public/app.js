@@ -3,6 +3,8 @@ const KEY = "outfit:lastCoords";
 const RECENT_KEY = "outfit:recentPlaces";
 const DEFAULT_TZ = "Asia/Taipei";
 const THEME_KEY = "outfit:theme";
+const MORNING_KEY = "outfit:morningBias";
+const EVENING_KEY = "outfit:eveningBias";
 
 const PLACES = [
   { name: "台北市", lat: 25.032969, lon: 121.565418 },
@@ -71,7 +73,7 @@ function renderTimeline(periods){
   el.innerHTML = (periods || []).map(p => {
     const feels = (p.feels_like_c != null) ? `${p.feels_like_c}°C` : "—";
     const rain = (p.rain === true) ? "有雨" : (p.rain === false ? "降雨低" : "雨?" );
-    return `<div class="time-card"><div class="time-label">${p.label || p.time}</div><div>${p.wear}</div><div class="time-note">體感 ${feels} · ${rain}</div></div>`;
+    return `<div class="time-card"><div class="time-label">${p.label || p.time}</div><div>${wearIcon(p.wear)} ${p.wear}</div><div class="time-note">${weatherIcon(p)} 體感 ${feels} · ${rain}</div></div>`;
   }).join("");
 }
 
@@ -104,18 +106,31 @@ function render(data){
     return;
   }
   setText("summary", data.overall?.summary || "（無 overall）");
-  setText("meta", `${data.place?.ctyName||""}${data.place?.townName||""} ${data.date} ${data.timezone}`);
+  const dateLabel = formatDateWithWeekday(data.date, data.timezone || DEFAULT_TZ);
+  setText("meta", `${data.place?.ctyName||""}${data.place?.townName||""} ${dateLabel} ${data.timezone || DEFAULT_TZ}`);
   const p = data.periods || [];
   qs("periods").innerHTML = p.map(x => {
     const rain = (x.rain === true) ? "會下雨" : (x.rain === false ? "不太會下雨" : "雨未知");
     const extras = (x.extras && x.extras.length) ? ("｜" + x.extras.join("、")) : "";
     const feels = (x.feels_like_c != null) ? `（體感 ${x.feels_like_c}°C）` : "";
-    return `<div style="margin-top:8px"><b>${x.label || x.time}</b>：${x.wear} ${feels}｜${rain}${extras}</div>`;
+    return `<div style="margin-top:8px"><b>${x.label || x.time}</b>：${wearIcon(x.wear)} ${x.wear} ${feels}｜${weatherIcon(x)} ${rain}${extras}</div>`;
   }).join("");
 
   renderTimeline(p);
   renderTips(data.overall);
   renderAlert(p);
+
+  if(currentPlace && currentPlace.name === "目前位置"){
+    const name = `${data.place?.ctyName || ""}${data.place?.townName || ""}`.trim();
+    if(name){
+      currentPlace = { name, lat: data.location?.lat, lon: data.location?.lon };
+      saveCoords(currentPlace.lat, currentPlace.lon, currentPlace.name);
+      removeRecent("目前位置");
+      addRecent(currentPlace);
+      renderRecent();
+      if(qs("placeSearch")) qs("placeSearch").value = currentPlace.name;
+    }
+  }
 }
 
 function dateByOffset(days){
@@ -133,9 +148,27 @@ function dateByOffset(days){
   return `${y}-${m}-${d}`;
 }
 
+function formatDateWithWeekday(dateStr, tz){
+  if(!dateStr) return "";
+  const date = new Date(`${dateStr}T00:00:00+08:00`);
+  const weekday = new Intl.DateTimeFormat("zh-Hant", { weekday: "short", timeZone: tz || DEFAULT_TZ }).format(date);
+  return `${dateStr} ${weekday}`;
+}
+
+function currentBias(){
+  const m = Number(localStorage.getItem(MORNING_KEY));
+  const e = Number(localStorage.getItem(EVENING_KEY));
+  return {
+    morning: Number.isFinite(m) ? m : 0,
+    evening: Number.isFinite(e) ? e : 0
+  };
+}
+
 async function callApi(lat, lon, dayOffset){
   const date = dateByOffset(dayOffset || 0);
-  const url = `${apiBase}?lat=${encodeURIComponent(lat)}&lon=${encodeURIComponent(lon)}&date=${encodeURIComponent(date)}`;
+  const bias = currentBias();
+  const url = `${apiBase}?lat=${encodeURIComponent(lat)}&lon=${encodeURIComponent(lon)}&date=${encodeURIComponent(date)}` +
+    `&morningBias=${encodeURIComponent(bias.morning)}&eveningBias=${encodeURIComponent(bias.evening)}`;
   const res = await fetch(url, { headers: { "Accept": "application/json" }});
   const data = await res.json();
   render(data);
@@ -299,6 +332,99 @@ const savedTheme = localStorage.getItem(THEME_KEY);
 if(savedTheme) applyTheme(savedTheme);
 const themeBtn = qs("themeToggle");
 if(themeBtn) themeBtn.addEventListener("click", toggleTheme);
+
+const settingsPanel = qs("settingsPanel");
+const settingsToggle = qs("settingsToggle");
+const closeSettings = qs("closeSettings");
+const resetBias = qs("resetBias");
+const morningInput = qs("morningBias");
+const eveningInput = qs("eveningBias");
+const morningValue = qs("morningBiasValue");
+const eveningValue = qs("eveningBiasValue");
+
+function openSettings(){
+  settingsPanel.classList.add("active");
+  settingsPanel.setAttribute("aria-hidden", "false");
+}
+function closeSettingsPanel(){
+  settingsPanel.classList.remove("active");
+  settingsPanel.setAttribute("aria-hidden", "true");
+}
+function syncBiasUI(){
+  const bias = currentBias();
+  morningInput.value = String(bias.morning);
+  eveningInput.value = String(bias.evening);
+  morningValue.textContent = bias.morning.toFixed(1);
+  eveningValue.textContent = bias.evening.toFixed(1);
+}
+function updateBias(){
+  const m = Number(morningInput.value);
+  const e = Number(eveningInput.value);
+  localStorage.setItem(MORNING_KEY, String(m));
+  localStorage.setItem(EVENING_KEY, String(e));
+  morningValue.textContent = m.toFixed(1);
+  eveningValue.textContent = e.toFixed(1);
+  if(currentPlace) callApi(currentPlace.lat, currentPlace.lon, currentDay).catch(e => render({ ok:false, error:String(e) }));
+}
+
+if(settingsToggle) settingsToggle.addEventListener("click", openSettings);
+if(closeSettings) closeSettings.addEventListener("click", closeSettingsPanel);
+if(settingsPanel) settingsPanel.addEventListener("click", (e) => {
+  if(e.target === settingsPanel) closeSettingsPanel();
+});
+if(morningInput) morningInput.addEventListener("input", updateBias);
+if(eveningInput) eveningInput.addEventListener("input", updateBias);
+if(resetBias) resetBias.addEventListener("click", () => {
+  localStorage.removeItem(MORNING_KEY);
+  localStorage.removeItem(EVENING_KEY);
+  syncBiasUI();
+  if(currentPlace) callApi(currentPlace.lat, currentPlace.lon, currentDay).catch(e => render({ ok:false, error:String(e) }));
+});
+syncBiasUI();
+
+function weatherIcon(p){
+  if(p.rain === true) return iconRain();
+  if(p.rain === false) return iconSun();
+  return iconCloud();
+}
+
+function wearIcon(wear){
+  const s = String(wear || "");
+  if (s.includes("羽絨") || s.includes("厚外套")) return iconCoat();
+  if (s.includes("薄外套") || s.includes("外套")) return iconJacket();
+  if (s.includes("毛衣") || s.includes("保暖")) return iconSweater();
+  if (s.includes("長袖")) return iconLongSleeve();
+  if (s.includes("短袖") || s.includes("背心")) return iconTshirt();
+  return iconLayer();
+}
+
+function iconSun(){
+  return "<svg class=\"ico\" viewBox=\"0 0 24 24\" aria-hidden=\"true\"><circle cx=\"12\" cy=\"12\" r=\"4\" fill=\"currentColor\"/><path d=\"M12 3v2M12 19v2M3 12h2M19 12h2M5.3 5.3l1.4 1.4M17.3 17.3l1.4 1.4M18.7 5.3l-1.4 1.4M6.7 17.3l-1.4 1.4\" stroke=\"currentColor\" stroke-width=\"1.5\" fill=\"none\" stroke-linecap=\"round\"/></svg>";
+}
+function iconCloud(){
+  return "<svg class=\"ico\" viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M6 18h9a4 4 0 0 0 0-8 5 5 0 0 0-9-1A4 4 0 0 0 6 18z\" fill=\"currentColor\"/></svg>";
+}
+function iconRain(){
+  return "<svg class=\"ico\" viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M6 14h9a4 4 0 0 0 0-8 5 5 0 0 0-9-1A4 4 0 0 0 6 14z\" fill=\"currentColor\"/><path d=\"M9 16l-1 2M12 16l-1 2M15 16l-1 2\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\"/></svg>";
+}
+function iconTshirt(){
+  return "<svg class=\"ico\" viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M8 5l2-2h4l2 2 3 2-2 3-2-1v9H9v-9l-2 1-2-3 3-2z\" fill=\"currentColor\"/></svg>";
+}
+function iconLongSleeve(){
+  return "<svg class=\"ico\" viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M7 5l2-2h6l2 2 3 2-2 4-2-1v9H8v-9l-2 1-2-4 3-2z\" fill=\"currentColor\"/></svg>";
+}
+function iconSweater(){
+  return "<svg class=\"ico\" viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M8 5l2-2h4l2 2 3 2-1.5 3.5-2-1v9H8v-9l-2 1L4.5 7 8 5z\" fill=\"currentColor\"/></svg>";
+}
+function iconJacket(){
+  return "<svg class=\"ico\" viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M8 4l2-2h4l2 2 3 2-2 3-2-1v11H9V8L7 9 5 6l3-2z\" fill=\"currentColor\"/></svg>";
+}
+function iconCoat(){
+  return "<svg class=\"ico\" viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M8 3l2-1h4l2 1 2 3-2 2-1-1v14H9V7L8 8 6 6l2-3z\" fill=\"currentColor\"/></svg>";
+}
+function iconLayer(){
+  return "<svg class=\"ico\" viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M12 4l8 5-8 5-8-5 8-5zm0 7l8 5-8 5-8-5 8-5z\" fill=\"currentColor\"/></svg>";
+}
 
 // 進來先用：URL座標 > localStorage座標
 const params = new URLSearchParams(location.search);
