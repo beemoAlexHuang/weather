@@ -30,6 +30,7 @@ const PLACES = [
   { name: "金門縣", lat: 24.436331, lon: 118.317089 },
   { name: "連江縣", lat: 26.160469, lon: 119.949875 }
 ];
+let SEARCH_PLACES = [...PLACES];
 
 function qs(id){ return document.getElementById(id); }
 function setText(id, txt){ qs(id).textContent = txt; }
@@ -62,9 +63,9 @@ function removeRecent(name){
 function findPlace(input){
   const q = String(input || "").trim();
   if(!q) return null;
-  const exact = PLACES.find(p => p.name === q);
+  const exact = SEARCH_PLACES.find(p => p.name === q);
   if(exact) return exact;
-  const loose = PLACES.find(p => p.name.includes(q));
+  const loose = SEARCH_PLACES.find(p => p.name.includes(q));
   return loose || null;
 }
 
@@ -208,7 +209,7 @@ function normalize(s){
 function matchPlaces(query){
   const q = normalize(query);
   if(!q) return [];
-  const ranked = PLACES.map(p => {
+  const ranked = SEARCH_PLACES.map(p => {
     const name = normalize(p.name);
     const starts = name.startsWith(q);
     const includes = name.includes(q);
@@ -306,7 +307,7 @@ qs("recentPlaces").addEventListener("click", (e) => {
 });
 
 function renderQuickPlaces(){
-  const list = ["台北市", "新北市", "桃園市", "台中市", "台南市", "高雄市", "新竹市", "嘉義市"];
+  const list = ["台北市", "台中市", "高雄市"];
   qs("quickPlaces").innerHTML = list.map(name =>
     `<button class=\"chip-btn\" type=\"button\" data-place=\"${name}\">${name}</button>`
   ).join("");
@@ -332,6 +333,20 @@ const savedTheme = localStorage.getItem(THEME_KEY);
 if(savedTheme) applyTheme(savedTheme);
 const themeBtn = qs("themeToggle");
 if(themeBtn) themeBtn.addEventListener("click", toggleTheme);
+
+async function loadTownships(){
+  try{
+    const res = await fetch("/data/townships.json", { cache: "force-cache" });
+    if(!res.ok) return;
+    const data = await res.json();
+    if(Array.isArray(data) && data.length){
+      SEARCH_PLACES = [...PLACES, ...data.map(x => ({ name: x.name, lat: x.lat, lon: x.lon, type: x.type }))];
+    }
+  }catch(e){
+    // no-op
+  }
+}
+loadTownships();
 
 const settingsPanel = qs("settingsPanel");
 const settingsToggle = qs("settingsToggle");
@@ -399,31 +414,31 @@ function wearIcon(wear){
 }
 
 function iconSun(){
-  return "<svg class=\"ico\" viewBox=\"0 0 24 24\" aria-hidden=\"true\"><circle cx=\"12\" cy=\"12\" r=\"4\" fill=\"currentColor\"/><path d=\"M12 3v2M12 19v2M3 12h2M19 12h2M5.3 5.3l1.4 1.4M17.3 17.3l1.4 1.4M18.7 5.3l-1.4 1.4M6.7 17.3l-1.4 1.4\" stroke=\"currentColor\" stroke-width=\"1.5\" fill=\"none\" stroke-linecap=\"round\"/></svg>";
+  return "<svg class=\"ico\" viewBox=\"0 0 24 24\" aria-hidden=\"true\"><circle cx=\"12\" cy=\"12\" r=\"4\"/><path d=\"M12 3v2M12 19v2M3 12h2M19 12h2M5.3 5.3l1.4 1.4M17.3 17.3l1.4 1.4M18.7 5.3l-1.4 1.4M6.7 17.3l-1.4 1.4\"/></svg>";
 }
 function iconCloud(){
-  return "<svg class=\"ico\" viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M6 18h9a4 4 0 0 0 0-8 5 5 0 0 0-9-1A4 4 0 0 0 6 18z\" fill=\"currentColor\"/></svg>";
+  return "<svg class=\"ico\" viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M7 18h9a4 4 0 0 0 0-8 5 5 0 0 0-9-1A4 4 0 0 0 7 18z\"/></svg>";
 }
 function iconRain(){
-  return "<svg class=\"ico\" viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M6 14h9a4 4 0 0 0 0-8 5 5 0 0 0-9-1A4 4 0 0 0 6 14z\" fill=\"currentColor\"/><path d=\"M9 16l-1 2M12 16l-1 2M15 16l-1 2\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\"/></svg>";
+  return "<svg class=\"ico\" viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M7 14h9a4 4 0 0 0 0-8 5 5 0 0 0-9-1A4 4 0 0 0 7 14z\"/><path d=\"M9 17l-1 2M12 17l-1 2M15 17l-1 2\"/></svg>";
 }
 function iconTshirt(){
-  return "<svg class=\"ico\" viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M8 5l2-2h4l2 2 3 2-2 3-2-1v9H9v-9l-2 1-2-3 3-2z\" fill=\"currentColor\"/></svg>";
+  return "<svg class=\"ico\" viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M8 5l2-2h4l2 2 3 2-2 3-2-1v9H9v-9l-2 1-2-3 3-2z\"/></svg>";
 }
 function iconLongSleeve(){
-  return "<svg class=\"ico\" viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M7 5l2-2h6l2 2 3 2-2 4-2-1v9H8v-9l-2 1-2-4 3-2z\" fill=\"currentColor\"/></svg>";
+  return "<svg class=\"ico\" viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M7 5l2-2h6l2 2 3 2-2 4-2-1v9H8v-9l-2 1-2-4 3-2z\"/></svg>";
 }
 function iconSweater(){
-  return "<svg class=\"ico\" viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M8 5l2-2h4l2 2 3 2-1.5 3.5-2-1v9H8v-9l-2 1L4.5 7 8 5z\" fill=\"currentColor\"/></svg>";
+  return "<svg class=\"ico\" viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M8 5l2-2h4l2 2 3 2-1.5 3.5-2-1v9H8v-9l-2 1L4.5 7 8 5z\"/></svg>";
 }
 function iconJacket(){
-  return "<svg class=\"ico\" viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M8 4l2-2h4l2 2 3 2-2 3-2-1v11H9V8L7 9 5 6l3-2z\" fill=\"currentColor\"/></svg>";
+  return "<svg class=\"ico\" viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M8 4l2-2h4l2 2 3 2-2 3-2-1v11H9V8L7 9 5 6l3-2z\"/></svg>";
 }
 function iconCoat(){
-  return "<svg class=\"ico\" viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M8 3l2-1h4l2 1 2 3-2 2-1-1v14H9V7L8 8 6 6l2-3z\" fill=\"currentColor\"/></svg>";
+  return "<svg class=\"ico\" viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M8 3l2-1h4l2 1 2 3-2 2-1-1v14H9V7L8 8 6 6l2-3z\"/></svg>";
 }
 function iconLayer(){
-  return "<svg class=\"ico\" viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M12 4l8 5-8 5-8-5 8-5zm0 7l8 5-8 5-8-5 8-5z\" fill=\"currentColor\"/></svg>";
+  return "<svg class=\"ico\" viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M12 4l8 5-8 5-8-5 8-5zm0 7l8 5-8 5-8-5 8-5z\"/></svg>";
 }
 
 // 進來先用：URL座標 > localStorage座標
