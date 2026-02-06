@@ -7,28 +7,28 @@ const MORNING_KEY = "outfit:morningBias";
 const EVENING_KEY = "outfit:eveningBias";
 
 const PLACES = [
-  { name: "台北市", lat: 25.032969, lon: 121.565418 },
-  { name: "新北市", lat: 25.016983, lon: 121.462787 },
-  { name: "桃園市", lat: 24.993681, lon: 121.300000 },
-  { name: "台中市", lat: 24.147736, lon: 120.673648 },
-  { name: "台南市", lat: 22.999728, lon: 120.227027 },
-  { name: "高雄市", lat: 22.627278, lon: 120.301435 },
-  { name: "基隆市", lat: 25.131723, lon: 121.744652 },
-  { name: "新竹市", lat: 24.813829, lon: 120.967479 },
-  { name: "新竹縣", lat: 24.838722, lon: 121.017724 },
-  { name: "苗栗縣", lat: 24.560159, lon: 120.821426 },
-  { name: "彰化縣", lat: 24.075305, lon: 120.544822 },
-  { name: "南投縣", lat: 23.960998, lon: 120.971863 },
-  { name: "雲林縣", lat: 23.709203, lon: 120.431337 },
-  { name: "嘉義市", lat: 23.480075, lon: 120.449111 },
-  { name: "嘉義縣", lat: 23.451842, lon: 120.255461 },
-  { name: "屏東縣", lat: 22.551976, lon: 120.548759 },
-  { name: "宜蘭縣", lat: 24.702107, lon: 121.737750 },
-  { name: "花蓮縣", lat: 23.987158, lon: 121.601571 },
-  { name: "台東縣", lat: 22.758587, lon: 121.144605 },
-  { name: "澎湖縣", lat: 23.571122, lon: 119.579735 },
-  { name: "金門縣", lat: 24.436331, lon: 118.317089 },
-  { name: "連江縣", lat: 26.160469, lon: 119.949875 }
+  { name: "台北市", lat: 25.032969, lon: 121.565418, type: "county" },
+  { name: "新北市", lat: 25.016983, lon: 121.462787, type: "county" },
+  { name: "桃園市", lat: 24.993681, lon: 121.300000, type: "county" },
+  { name: "台中市", lat: 24.147736, lon: 120.673648, type: "county" },
+  { name: "台南市", lat: 22.999728, lon: 120.227027, type: "county" },
+  { name: "高雄市", lat: 22.627278, lon: 120.301435, type: "county" },
+  { name: "基隆市", lat: 25.131723, lon: 121.744652, type: "county" },
+  { name: "新竹市", lat: 24.813829, lon: 120.967479, type: "county" },
+  { name: "新竹縣", lat: 24.838722, lon: 121.017724, type: "county" },
+  { name: "苗栗縣", lat: 24.560159, lon: 120.821426, type: "county" },
+  { name: "彰化縣", lat: 24.075305, lon: 120.544822, type: "county" },
+  { name: "南投縣", lat: 23.960998, lon: 120.971863, type: "county" },
+  { name: "雲林縣", lat: 23.709203, lon: 120.431337, type: "county" },
+  { name: "嘉義市", lat: 23.480075, lon: 120.449111, type: "county" },
+  { name: "嘉義縣", lat: 23.451842, lon: 120.255461, type: "county" },
+  { name: "屏東縣", lat: 22.551976, lon: 120.548759, type: "county" },
+  { name: "宜蘭縣", lat: 24.702107, lon: 121.737750, type: "county" },
+  { name: "花蓮縣", lat: 23.987158, lon: 121.601571, type: "county" },
+  { name: "台東縣", lat: 22.758587, lon: 121.144605, type: "county" },
+  { name: "澎湖縣", lat: 23.571122, lon: 119.579735, type: "county" },
+  { name: "金門縣", lat: 24.436331, lon: 118.317089, type: "county" },
+  { name: "連江縣", lat: 26.160469, lon: 119.949875, type: "county" }
 ];
 let SEARCH_PLACES = [...PLACES];
 
@@ -63,9 +63,12 @@ function removeRecent(name){
 function findPlace(input){
   const q = String(input || "").trim();
   if(!q) return null;
-  const exact = SEARCH_PLACES.find(p => p.name === q);
+  const norm = normalize(q);
+  const exact = SEARCH_PLACES.find(p => normalize(p.name) === norm);
   if(exact) return exact;
-  const loose = SEARCH_PLACES.find(p => p.name.includes(q));
+  const townExact = SEARCH_PLACES.find(p => p.town && normalize(p.town) === norm);
+  if(townExact) return townExact;
+  const loose = SEARCH_PLACES.find(p => normalize(p.name).includes(norm));
   return loose || null;
 }
 
@@ -211,13 +214,23 @@ function matchPlaces(query){
   if(!q) return [];
   const ranked = SEARCH_PLACES.map(p => {
     const name = normalize(p.name);
-    const starts = name.startsWith(q);
-    const includes = name.includes(q);
-    const score = starts ? 2 : (includes ? 1 : 0);
+    const town = p.town ? normalize(p.town) : "";
+    const county = p.county ? normalize(p.county) : "";
+    const score =
+      (name.startsWith(q) ? 3 : 0) +
+      (name.includes(q) ? 2 : 0) +
+      (town && town.startsWith(q) ? 2 : 0) +
+      (town && town.includes(q) ? 1 : 0) +
+      (county && county.startsWith(q) ? 1 : 0);
     return { p, score };
   }).filter(x => x.score > 0);
   ranked.sort((a, b) => b.score - a.score || a.p.name.localeCompare(b.p.name));
   return ranked.map(x => x.p).slice(0, 8);
+}
+
+function displayLabel(p){
+  if(p.town && p.county) return `${p.county}${p.town}`;
+  return p.name;
 }
 
 function renderSuggestions(list){
@@ -227,7 +240,11 @@ function renderSuggestions(list){
     box.innerHTML = "";
     return;
   }
-  box.innerHTML = list.map(p => `<button type=\"button\" data-place=\"${p.name}\">${p.name}</button>`).join("");
+  box.innerHTML = list.map(p => {
+    const label = displayLabel(p);
+    const meta = (p.town && p.county) ? `<span class=\"suggest-meta\">${p.county}</span>` : "";
+    return `<button type=\"button\" data-place=\"${label}\">${label}${meta}</button>`;
+  }).join("");
   box.style.display = "block";
 }
 
@@ -249,9 +266,9 @@ qs("suggestions").addEventListener("click", (e) => {
   const btn = e.target.closest("button[data-place]");
   if(!btn) return;
   const name = btn.getAttribute("data-place");
-  const place = findPlace(name);
+  const place = findPlace(name) || SEARCH_PLACES.find(p => displayLabel(p) === name);
   if(place){
-    qs("placeSearch").value = place.name;
+    qs("placeSearch").value = displayLabel(place);
     qs("suggestions").style.display = "none";
     applyPlace(place);
   }
@@ -262,7 +279,7 @@ qs("searchForm").addEventListener("submit", (e) => {
   const q = qs("placeSearch").value.trim();
   const place = findPlace(q) || matchPlaces(q)[0];
   if(!place) return alert("找不到該縣市，請改用其他關鍵字。");
-  qs("placeSearch").value = place.name;
+  qs("placeSearch").value = displayLabel(place);
   applyPlace(place);
 });
 
@@ -340,7 +357,14 @@ async function loadTownships(){
     if(!res.ok) return;
     const data = await res.json();
     if(Array.isArray(data) && data.length){
-      SEARCH_PLACES = [...PLACES, ...data.map(x => ({ name: x.name, lat: x.lat, lon: x.lon, type: x.type }))];
+      SEARCH_PLACES = [...PLACES, ...data.map(x => ({
+        name: x.name,
+        county: x.county,
+        town: x.town,
+        lat: x.lat,
+        lon: x.lon,
+        type: x.type
+      }))];
     }
   }catch(e){
     // no-op

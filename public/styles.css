@@ -186,8 +186,17 @@ input[type="search"]{width:100%}
   border-radius:10px;
   box-shadow:none;
   font-weight:600;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
 }
 .suggestions button:hover{background:var(--code)}
+.suggest-meta{
+  color:var(--muted);
+  font-size:12px;
+  font-weight:600;
+}
 button{
   padding:10px 14px;
   border:0;
