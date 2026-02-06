@@ -28,6 +28,32 @@
   }
 }
 
+:root[data-theme="light"]{
+  --bg:#f7f2ea;
+  --bg-2:#f1ebe1;
+  --ink:#1c1b1a;
+  --muted:#6a625a;
+  --card:#fffbf5;
+  --border:#e3dbd0;
+  --accent:#2f6f6c;
+  --accent-2:#c85b3c;
+  --shadow:0 12px 30px rgba(24, 20, 16, 0.12);
+  --code:#efe7dc;
+}
+
+:root[data-theme="dark"]{
+  --bg:#0f1112;
+  --bg-2:#141718;
+  --ink:#f2efe9;
+  --muted:#b1aaa1;
+  --card:#161a1b;
+  --border:#2a2f30;
+  --accent:#6cd0c9;
+  --accent-2:#ff8d6b;
+  --shadow:0 18px 40px rgba(0, 0, 0, 0.45);
+  --code:#1f2324;
+}
+
 *{box-sizing:border-box}
 html,body{height:100%}
 body{
@@ -55,6 +81,12 @@ body{
   flex-direction:column;
   gap:12px;
   animation:fadeUp 520ms ease both;
+}
+.hero-actions{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  flex-wrap:wrap;
 }
 .hero-title{
   font-family:"Noto Serif TC", "Noto Sans TC", serif;
@@ -114,6 +146,7 @@ body{
   display:flex;
   flex-direction:column;
   gap:6px;
+  position:relative;
 }
 .label{
   font-size:12px;
@@ -128,6 +161,33 @@ input{
   min-width:120px;
 }
 input[type="search"]{width:100%}
+
+.suggestions{
+  position:absolute;
+  top:100%;
+  left:0;
+  right:0;
+  background:var(--card);
+  border:1px solid var(--border);
+  border-radius:12px;
+  box-shadow:var(--shadow);
+  margin-top:6px;
+  padding:6px;
+  display:none;
+  z-index:10;
+}
+.suggestions button{
+  width:100%;
+  justify-content:flex-start;
+  background:transparent;
+  color:var(--ink);
+  border:0;
+  padding:8px 10px;
+  border-radius:10px;
+  box-shadow:none;
+  font-weight:600;
+}
+.suggestions button:hover{background:var(--code)}
 button{
   padding:10px 14px;
   border:0;
@@ -187,6 +247,20 @@ button.ghost{
 }
 .pill-link:hover{color:var(--ink)}
 
+.theme-toggle{
+  width:40px;
+  height:40px;
+  border-radius:50%;
+  border:1px solid var(--border);
+  background:var(--card);
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  cursor:pointer;
+  box-shadow:var(--shadow);
+}
+.theme-toggle svg{width:20px;height:20px}
+
 .summary{
   font-size:20px;
   font-weight:700;
@@ -194,6 +268,27 @@ button.ghost{
   margin:0 0 4px;
 }
 .meta{color:var(--muted);font-size:13px}
+
+.tabs{
+  display:flex;
+  gap:8px;
+  margin-bottom:10px;
+}
+.tab{
+  padding:8px 12px;
+  border-radius:999px;
+  border:1px solid var(--border);
+  background:transparent;
+  color:var(--muted);
+  font-weight:700;
+  cursor:pointer;
+  box-shadow:none;
+}
+.tab.active{
+  background:var(--accent);
+  color:#fff;
+  border-color:transparent;
+}
 
 .timeline{
   margin-top:10px;

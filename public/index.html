@@ -20,7 +20,14 @@
       <span class="chip">CWA 72hr · Outfit Planner</span>
       <h1 class="hero-title">今天該怎麼穿？</h1>
       <div class="hero-sub">依照中央氣象署逐時資料，給你早中晚與一套到底的穿搭建議。</div>
-      <a class="pill-link" href="/mini">開啟精簡版 /mini →</a>
+      <div class="hero-actions">
+        <a class="pill-link" href="/mini">開啟精簡版 /mini →</a>
+        <button class="theme-toggle" id="themeToggle" type="button" aria-label="切換深色/淺色">
+          <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+            <path fill="currentColor" d="M12 4.5a1 1 0 0 1 1 1v1.2a1 1 0 1 1-2 0V5.5a1 1 0 0 1 1-1zm0 12.3a1 1 0 0 1 1 1v1.2a1 1 0 1 1-2 0v-1.2a1 1 0 0 1 1-1zm7.5-4.8a1 1 0 0 1-1 1h-1.2a1 1 0 1 1 0-2h1.2a1 1 0 0 1 1 1zM7.7 12a1 1 0 0 1-1 1H5.5a1 1 0 1 1 0-2h1.2a1 1 0 0 1 1 1zm9.02-5.52a1 1 0 0 1 1.41 0l.85.85a1 1 0 1 1-1.41 1.41l-.85-.85a1 1 0 0 1 0-1.41zM6.56 17.44a1 1 0 0 1 1.41 0l.85.85a1 1 0 0 1-1.41 1.41l-.85-.85a1 1 0 0 1 0-1.41zm12.17 1.41a1 1 0 0 1-1.41 0l-.85-.85a1 1 0 1 1 1.41-1.41l.85.85a1 1 0 0 1 0 1.41zM7.41 7.41a1 1 0 0 1-1.41 0l-.85-.85a1 1 0 1 1 1.41-1.41l.85.85a1 1 0 0 1 0 1.41zM12 8a4 4 0 1 1 0 8 4 4 0 0 1 0-8z"/>
+          </svg>
+        </button>
+      </div>
     </header>
 
     <section class="layout">
@@ -29,8 +36,8 @@
         <form id="searchForm" class="row" style="margin-bottom:10px">
           <div class="field" style="flex:1 1 220px">
             <span class="label">搜尋台灣縣市</span>
-            <input id="placeSearch" type="search" list="placeList" placeholder="例如：台北市 / 台中市 / 高雄市" />
-            <datalist id="placeList"></datalist>
+            <input id="placeSearch" type="search" placeholder="例如：台北市 / 台中市 / 高雄市" autocomplete="off" />
+            <div class="suggestions" id="suggestions"></div>
           </div>
           <button id="btnApply" type="submit">套用</button>
           <button class="secondary" id="btnGeo" type="button">用目前位置</button>
@@ -43,6 +50,11 @@
       </div>
 
       <div class="card" id="out">
+        <div class="tabs" id="dayTabs">
+          <button class="tab active" type="button" data-day="0">今天</button>
+          <button class="tab" type="button" data-day="1">明天</button>
+          <button class="tab" type="button" data-day="2">後天</button>
+        </div>
         <div class="summary" id="summary">尚未查詢</div>
         <div class="meta" id="meta"></div>
         <div class="timeline" id="timeline"></div>

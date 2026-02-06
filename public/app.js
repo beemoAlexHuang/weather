@@ -1,6 +1,8 @@
 const apiBase = "/api/outfit";
 const KEY = "outfit:lastCoords";
 const RECENT_KEY = "outfit:recentPlaces";
+const DEFAULT_TZ = "Asia/Taipei";
+const THEME_KEY = "outfit:theme";
 
 const PLACES = [
   { name: "台北市", lat: 25.032969, lon: 121.565418 },
@@ -53,11 +55,6 @@ function removeRecent(name){
   const list = loadRecent().filter(p => p.name !== name);
   saveRecent(list);
   renderRecent();
-}
-
-function populatePlaces(){
-  const list = qs("placeList");
-  list.innerHTML = PLACES.map(p => `<option value="${p.name}"></option>`).join("");
 }
 
 function findPlace(input){
@@ -121,23 +118,42 @@ function render(data){
   renderAlert(p);
 }
 
-async function callApi(lat, lon){
-  const url = `${apiBase}?lat=${encodeURIComponent(lat)}&lon=${encodeURIComponent(lon)}`;
+function dateByOffset(days){
+  const base = new Date();
+  const target = new Date(base.getTime() + days * 86400000);
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: DEFAULT_TZ,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit"
+  }).formatToParts(target);
+  const y = parts.find(p => p.type === "year")?.value;
+  const m = parts.find(p => p.type === "month")?.value;
+  const d = parts.find(p => p.type === "day")?.value;
+  return `${y}-${m}-${d}`;
+}
+
+async function callApi(lat, lon, dayOffset){
+  const date = dateByOffset(dayOffset || 0);
+  const url = `${apiBase}?lat=${encodeURIComponent(lat)}&lon=${encodeURIComponent(lon)}&date=${encodeURIComponent(date)}`;
   const res = await fetch(url, { headers: { "Accept": "application/json" }});
   const data = await res.json();
   render(data);
   return data;
 }
 
+let currentPlace = null;
+let currentDay = 0;
+
 function applyPlace(place){
   if(!place) return;
+  currentPlace = place;
   saveCoords(place.lat, place.lon, place.name);
   addRecent(place);
   renderRecent();
-  callApi(place.lat, place.lon).catch(e => render({ ok:false, error:String(e) }));
+  callApi(place.lat, place.lon, currentDay).catch(e => render({ ok:false, error:String(e) }));
 }
 
-populatePlaces();
 renderRecent();
 
 function renderRecent(){
@@ -153,11 +169,66 @@ function renderRecent(){
   )).join("");
 }
 
+function normalize(s){
+  return String(s || "").replace(/\s+/g, "").toLowerCase();
+}
+function matchPlaces(query){
+  const q = normalize(query);
+  if(!q) return [];
+  const ranked = PLACES.map(p => {
+    const name = normalize(p.name);
+    const starts = name.startsWith(q);
+    const includes = name.includes(q);
+    const score = starts ? 2 : (includes ? 1 : 0);
+    return { p, score };
+  }).filter(x => x.score > 0);
+  ranked.sort((a, b) => b.score - a.score || a.p.name.localeCompare(b.p.name));
+  return ranked.map(x => x.p).slice(0, 8);
+}
+
+function renderSuggestions(list){
+  const box = qs("suggestions");
+  if(!list.length){
+    box.style.display = "none";
+    box.innerHTML = "";
+    return;
+  }
+  box.innerHTML = list.map(p => `<button type=\"button\" data-place=\"${p.name}\">${p.name}</button>`).join("");
+  box.style.display = "block";
+}
+
+qs("placeSearch").addEventListener("input", (e) => {
+  const list = matchPlaces(e.target.value);
+  renderSuggestions(list);
+});
+qs("placeSearch").addEventListener("focus", (e) => {
+  const list = matchPlaces(e.target.value);
+  renderSuggestions(list);
+});
+document.addEventListener("click", (e) => {
+  if(!e.target.closest("#placeSearch") && !e.target.closest("#suggestions")){
+    qs("suggestions").style.display = "none";
+  }
+});
+
+qs("suggestions").addEventListener("click", (e) => {
+  const btn = e.target.closest("button[data-place]");
+  if(!btn) return;
+  const name = btn.getAttribute("data-place");
+  const place = findPlace(name);
+  if(place){
+    qs("placeSearch").value = place.name;
+    qs("suggestions").style.display = "none";
+    applyPlace(place);
+  }
+});
+
 qs("searchForm").addEventListener("submit", (e) => {
   e.preventDefault();
   const q = qs("placeSearch").value.trim();
-  const place = findPlace(q);
-  if(!place) return alert("找不到該縣市，請從清單選擇。");
+  const place = findPlace(q) || matchPlaces(q)[0];
+  if(!place) return alert("找不到該縣市，請改用其他關鍵字。");
+  qs("placeSearch").value = place.name;
   applyPlace(place);
 });
 
@@ -167,8 +238,12 @@ qs("btnGeo").onclick = () => {
     pos => {
       const lat = Number(pos.coords.latitude.toFixed(6));
       const lon = Number(pos.coords.longitude.toFixed(6));
-      saveCoords(lat, lon, "目前位置");
-      callApi(lat, lon).catch(e => render({ ok:false, error:String(e) }));
+      const place = { name: "目前位置", lat, lon };
+      saveCoords(lat, lon, place.name);
+      addRecent(place);
+      renderRecent();
+      currentPlace = place;
+      callApi(lat, lon, currentDay).catch(e => render({ ok:false, error:String(e) }));
     },
     err => alert("定位失敗：" + err.message),
     { enableHighAccuracy:false, timeout:10000, maximumAge:60000 }
@@ -205,19 +280,53 @@ function renderQuickPlaces(){
 }
 renderQuickPlaces();
 
+function applyTheme(theme){
+  const root = document.documentElement;
+  if(theme === "dark" || theme === "light"){
+    root.setAttribute("data-theme", theme);
+    localStorage.setItem(THEME_KEY, theme);
+  } else {
+    root.removeAttribute("data-theme");
+    localStorage.removeItem(THEME_KEY);
+  }
+}
+function toggleTheme(){
+  const current = localStorage.getItem(THEME_KEY);
+  if(current === "dark") applyTheme("light");
+  else applyTheme("dark");
+}
+const savedTheme = localStorage.getItem(THEME_KEY);
+if(savedTheme) applyTheme(savedTheme);
+const themeBtn = qs("themeToggle");
+if(themeBtn) themeBtn.addEventListener("click", toggleTheme);
+
 // 進來先用：URL座標 > localStorage座標
 const params = new URLSearchParams(location.search);
 const pLat = params.get("lat"), pLon = params.get("lon");
 if(pLat && pLon){
-  saveCoords(Number(pLat), Number(pLon), "");
-  callApi(pLat, pLon).catch(e => render({ ok:false, error:String(e) }));
+  const place = { name: "", lat: Number(pLat), lon: Number(pLon) };
+  currentPlace = place;
+  saveCoords(place.lat, place.lon, place.name);
+  callApi(place.lat, place.lon, currentDay).catch(e => render({ ok:false, error:String(e) }));
 } else {
   const last = loadCoords();
   if(last && last.lat && last.lon){
-    callApi(last.lat, last.lon).catch(e => render({ ok:false, error:String(e) }));
+    currentPlace = { name: last.name || "", lat: last.lat, lon: last.lon };
+    callApi(last.lat, last.lon, currentDay).catch(e => render({ ok:false, error:String(e) }));
     if(last.name) qs("placeSearch").value = last.name;
   }
 }
+
+qs("dayTabs").addEventListener("click", (e) => {
+  const btn = e.target.closest("button[data-day]");
+  if(!btn) return;
+  const day = Number(btn.getAttribute("data-day"));
+  if(!Number.isFinite(day)) return;
+  currentDay = day;
+  qs("dayTabs").querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
+  btn.classList.add("active");
+  if(currentPlace) callApi(currentPlace.lat, currentPlace.lon, currentDay).catch(e => render({ ok:false, error:String(e) }));
+});
 
 // Register SW (best effort)
 if("serviceWorker" in navigator){
