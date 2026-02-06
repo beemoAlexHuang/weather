@@ -1,0 +1,13 @@
+{
+  "name": "weather-worker",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "node scripts/build.js"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20240208.0",
+    "esbuild": "^0.23.0",
+    "typescript": "^5.5.4"
+  }
+}

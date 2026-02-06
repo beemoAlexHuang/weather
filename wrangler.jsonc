@@ -1,9 +1,12 @@
 {
   "name": "weather",
   "compatibility_date": "2026-02-06",
-  "main": "worker.js",
+  "main": "src/worker.ts",
   "assets": {
     "directory": "./public"
+  },
+  "build": {
+    "command": "npm ci && npm run build"
   },
   "vars": {
     "CWA_ENDPOINT": "https://opendata.cwa.gov.tw/linked/graphql",

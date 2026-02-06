@@ -15,9 +15,20 @@ const CACHE_VERSION = "2026-02-05pwa-v1";
 const MORNING_BIAS_C = 0.0;
 const EVENING_BIAS_C = 0.0;
 
+type FetcherLike = { fetch: (request: Request) => Promise<Response> };
+interface Env {
+  CWA_ENDPOINT?: string;
+  CWA_GQL_QUERY?: string;
+  CWA_AUTH?: string;
+  TIMES?: string;
+  TZ?: string;
+  POP_RAIN_THRESHOLD?: string | number;
+  ASSETS?: FetcherLike;
+}
+
 // ================= ROUTER =================
 export default {
-  async fetch(request, env, ctx) {
+  async fetch(request: Request, env: Env, ctx: ExecutionContext) {
     const url = new URL(request.url);
 
     // CORS preflight
@@ -82,7 +93,7 @@ function appleTouchIconResponse() {
 }
 
 // ================= API =================
-async function handleApi(request, env, ctx) {
+async function handleApi(request: Request, env: Env, ctx: ExecutionContext) {
   const url = new URL(request.url);
   const debug = url.searchParams.get("debug") === "1";
 
@@ -150,7 +161,7 @@ async function handleApi(request, env, ctx) {
     return json({ ok: false, error: "CWA GraphQL returned errors", errors: payload.errors }, 502, corsHeaders());
   }
 
-  let town = payload?.data?.town;
+  let town = payload?.data?.town as any;
   if (Array.isArray(town)) town = town[0];
   const f72 = town?.forecast72hr;
   if (!f72) return json({ ok: false, error: "CWA response missing forecast72hr" }, 502, corsHeaders());
@@ -175,7 +186,7 @@ async function handleApi(request, env, ctx) {
 
     const advice = outfitAdvice({ tempC, windMs, popPct, wxDesc, comfortDesc, popTh, hhmm: hh, bias });
 
-    const item = {
+    const item: any = {
       label: labelOfTime(hh),
       time: hh,
       wear: advice.wear,
@@ -209,7 +220,7 @@ async function handleApi(request, env, ctx) {
 }
 
 // ================= Outfit logic =================
-function labelOfTime(hhmm) {
+function labelOfTime(hhmm: string) {
   const s = String(hhmm || "").trim();
   const h = parseInt(s.split(":")[0], 10);
   if (!Number.isFinite(h)) return "";
@@ -218,7 +229,7 @@ function labelOfTime(hhmm) {
   return "晚";
 }
 
-function timeBiasC(hhmm, bias) {
+function timeBiasC(hhmm: string, bias?: { morning: number; evening: number }) {
   const s = String(hhmm || "").trim();
   const h = parseInt(s.split(":")[0], 10);
   if (!Number.isFinite(h)) return 0;
@@ -227,7 +238,7 @@ function timeBiasC(hhmm, bias) {
   return 0;
 }
 
-function wearFromFeelsC(f) {
+function wearFromFeelsC(f: number) {
   if (!Number.isFinite(f)) return "未知";
   if (f >= 34) return "超薄短袖/背心";
   if (f >= 30) return "短袖（排汗）";
@@ -240,7 +251,7 @@ function wearFromFeelsC(f) {
   return "全副武裝";
 }
 
-function parseCwaTimeToMs(s) {
+function parseCwaTimeToMs(s: string) {
   if (!s) return NaN;
   let t = String(s).trim();
   if (t.includes(" ") && !t.includes("T")) t = t.replace(" ", "T");
@@ -250,7 +261,7 @@ function parseCwaTimeToMs(s) {
   return Number.isFinite(ms) ? ms : NaN;
 }
 
-function parseSkyFromDesc(desc) {
+function parseSkyFromDesc(desc: string | null | undefined) {
   const s = String(desc || "");
   const sunny = s.includes("晴");
   const cloudy = s.includes("陰") || s.includes("多雲");
@@ -258,7 +269,7 @@ function parseSkyFromDesc(desc) {
   return { sunny, cloudy, rainy };
 }
 
-function comfortAdjust(desc) {
+function comfortAdjust(desc: string | null | undefined) {
   const d = String(desc || "");
   if (d.includes("非常悶熱")) return +2.5;
   if (d.includes("悶熱")) return +HUMID_FEEL_BONUS;
@@ -268,7 +279,7 @@ function comfortAdjust(desc) {
   return 0;
 }
 
-function windChillLikeC(tempC, windMs) {
+function windChillLikeC(tempC: number, windMs: number) {
   if (!Number.isFinite(tempC)) return NaN;
   if (!Number.isFinite(windMs) || windMs <= 1.5) return tempC;
   if (tempC > 12) return tempC;
@@ -276,7 +287,14 @@ function windChillLikeC(tempC, windMs) {
   return tempC - Math.max(0, drop);
 }
 
-function calcFeelsC({ tempC, windMs, comfortDesc, wxDesc, hhmm, bias }) {
+function calcFeelsC({ tempC, windMs, comfortDesc, wxDesc, hhmm, bias }: {
+  tempC: number;
+  windMs: number;
+  comfortDesc: string | null | undefined;
+  wxDesc: string | null | undefined;
+  hhmm: string;
+  bias?: { morning: number; evening: number };
+}) {
   let feels = tempC;
   feels = windChillLikeC(feels, windMs);
   feels += comfortAdjust(comfortDesc);
@@ -290,16 +308,25 @@ function calcFeelsC({ tempC, windMs, comfortDesc, wxDesc, hhmm, bias }) {
   return feels;
 }
 
-function outfitAdvice({ tempC, windMs, popPct, wxDesc, comfortDesc, popTh, hhmm, bias }) {
+function outfitAdvice({ tempC, windMs, popPct, wxDesc, comfortDesc, popTh, hhmm, bias }: {
+  tempC: number;
+  windMs: number;
+  popPct: number;
+  wxDesc: string | null | undefined;
+  comfortDesc: string | null | undefined;
+  popTh: number;
+  hhmm: string;
+  bias?: { morning: number; evening: number };
+}) {
   const { sunny, rainy } = parseSkyFromDesc(wxDesc);
   const feels = calcFeelsC({ tempC, windMs, comfortDesc, wxDesc, hhmm, bias });
   const wear = wearFromFeelsC(feels);
 
-  let rain = null;
+  let rain: boolean | null = null;
   if (Number.isFinite(popPct)) rain = popPct >= popTh;
   else if (typeof wxDesc === "string") rain = rainy;
 
-  const extras = [];
+  const extras: string[] = [];
   if (rain === true) extras.push("雨具/防水外層");
   if (sunny && Number.isFinite(feels) && feels >= 26) extras.push("帽子/防曬");
   if (Number.isFinite(windMs) && windMs >= WIND_STRONG_MS && Number.isFinite(feels) && feels <= 22) extras.push("防風外層");
@@ -309,8 +336,8 @@ function outfitAdvice({ tempC, windMs, popPct, wxDesc, comfortDesc, popTh, hhmm,
 }
 
 // ================= Series helpers =================
-function flattenPointSeries_(arr, timeKey, valueKey) {
-  const out = [];
+function flattenPointSeries_(arr: any[], timeKey: string, valueKey: string) {
+  const out: { ms: number; v: number }[] = [];
   const a = Array.isArray(arr) ? arr : [];
   for (const x of a) {
     const ms = parseCwaTimeToMs(x?.[timeKey]);
@@ -321,8 +348,8 @@ function flattenPointSeries_(arr, timeKey, valueKey) {
   return out;
 }
 
-function flattenComfortSeries_(arr) {
-  const out = [];
+function flattenComfortSeries_(arr: any[]) {
+  const out: { ms: number; d: string }[] = [];
   const a = Array.isArray(arr) ? arr : [];
   for (const x of a) {
     const ms = parseCwaTimeToMs(x?.DataTime);
@@ -333,8 +360,8 @@ function flattenComfortSeries_(arr) {
   return out;
 }
 
-function flattenIntervalSeries_(arr, startKey, endKey, valueKey) {
-  const out = [];
+function flattenIntervalSeries_(arr: any[], startKey: string, endKey: string, valueKey: string) {
+  const out: { s: number; e: number; v: number }[] = [];
   const a = Array.isArray(arr) ? arr : [];
   for (const x of a) {
     const s = parseCwaTimeToMs(x?.[startKey]);
@@ -346,8 +373,8 @@ function flattenIntervalSeries_(arr, startKey, endKey, valueKey) {
   return out;
 }
 
-function flattenIntervalDesc_(arr, startKey, endKey, descKey) {
-  const out = [];
+function flattenIntervalDesc_(arr: any[], startKey: string, endKey: string, descKey: string) {
+  const out: { s: number; e: number; d: string }[] = [];
   const a = Array.isArray(arr) ? arr : [];
   for (const x of a) {
     const s = parseCwaTimeToMs(x?.[startKey]);
@@ -359,7 +386,7 @@ function flattenIntervalDesc_(arr, startKey, endKey, descKey) {
   return out;
 }
 
-function pickAtOrBefore_(points, targetMs) {
+function pickAtOrBefore_(points: { ms: number; v: number }[], targetMs: number) {
   if (!points.length || !Number.isFinite(targetMs)) return NaN;
   let best = NaN;
   for (const p of points) {
@@ -369,9 +396,9 @@ function pickAtOrBefore_(points, targetMs) {
   return Number.isFinite(best) ? best : points[0].v;
 }
 
-function pickDescAtOrBefore_(points, targetMs) {
+function pickDescAtOrBefore_(points: { ms: number; d: string }[], targetMs: number) {
   if (!points.length || !Number.isFinite(targetMs)) return null;
-  let best = null;
+  let best: string | null = null;
   for (const p of points) {
     if (p.ms <= targetMs) best = p.d;
     else break;
@@ -380,7 +407,7 @@ function pickDescAtOrBefore_(points, targetMs) {
 }
 
 // intervals: cover -> fallback nearest by end-time
-function pickIntervalValue_(intervals, targetMs) {
+function pickIntervalValue_(intervals: { s: number; e: number; v: number }[], targetMs: number) {
   if (!intervals.length || !Number.isFinite(targetMs)) return NaN;
   for (const it of intervals) if (targetMs >= it.s && targetMs < it.e) return it.v;
 
@@ -393,7 +420,7 @@ function pickIntervalValue_(intervals, targetMs) {
   return best.v;
 }
 
-function pickIntervalDesc_(intervals, targetMs) {
+function pickIntervalDesc_(intervals: { s: number; e: number; d: string }[], targetMs: number) {
   if (!intervals.length || !Number.isFinite(targetMs)) return null;
   for (const it of intervals) if (targetMs >= it.s && targetMs < it.e) return it.d;
 
@@ -406,7 +433,7 @@ function pickIntervalDesc_(intervals, targetMs) {
   return best.d;
 }
 
-function overallOutfit({ periods, popTh }) {
+function overallOutfit({ periods, popTh }: { periods: any[]; popTh: number }) {
   const feels = periods.map(p => Number(p.feels_like_c)).filter(Number.isFinite);
   const minFeels = feels.length ? Math.min(...feels) : NaN;
   const maxFeels = feels.length ? Math.max(...feels) : NaN;
@@ -417,9 +444,11 @@ function overallOutfit({ periods, popTh }) {
   const windMax = winds.length ? Math.max(...winds) : NaN;
 
   const plan = {
-    base: null, mid: null, shell: null,
-    summary: null,
-    tips: [],
+    base: null as string | null,
+    mid: null as string | null,
+    shell: null as string | null,
+    summary: null as string | null,
+    tips: [] as string[],
     range: Number.isFinite(swing) ? { min_feels_like_c: minFeels, max_feels_like_c: maxFeels } : null
   };
 
@@ -450,12 +479,14 @@ function overallOutfit({ periods, popTh }) {
 
   if (rainAny) plan.tips.push(`有雨機率 ≥ ${popTh}%：帶雨具/防水外層最省事`);
   if (Number.isFinite(windMax) && windMax >= WIND_STRONG_MS) plan.tips.push("風偏大：外層選防風更舒服");
-  plan.tips.push("原則：中午不悶熱、早晚靠可脫層調節");
+  if (swing > 4 || minFeels <= 22) {
+    plan.tips.push("溫差明顯或早晚偏冷：可脫層更好調節");
+  }
   return plan;
 }
 
 // ================= Utils =================
-function todayInTZ(tz) {
+function todayInTZ(tz: string) {
   const parts = new Intl.DateTimeFormat("en-CA", {
     timeZone: tz, year: "numeric", month: "2-digit", day: "2-digit"
   }).formatToParts(new Date());
@@ -465,7 +496,7 @@ function todayInTZ(tz) {
   return `${y}-${m}-${d}`;
 }
 
-function json(obj, status = 200, extraHeaders = {}) {
+function json(obj: unknown, status = 200, extraHeaders: Record<string, string> = {}) {
   return new Response(JSON.stringify(obj), {
     status,
     headers: { "content-type": "application/json; charset=utf-8", ...extraHeaders },
