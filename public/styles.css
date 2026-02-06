@@ -152,6 +152,34 @@ button.ghost{
   box-shadow:none;
 }
 
+.chip-btn{
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  padding:8px 12px;
+  border-radius:999px;
+  border:1px solid var(--border);
+  background:var(--code);
+  color:var(--ink);
+  font-weight:600;
+  cursor:pointer;
+}
+.chip-btn:hover{transform:translateY(-1px)}
+.chip-del{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  width:18px;height:18px;
+  border-radius:50%;
+  border:1px solid var(--border);
+  background:transparent;
+  color:var(--muted);
+  font-size:12px;
+  line-height:1;
+  cursor:pointer;
+}
+.chip-del:hover{color:var(--ink)}
+
 .pill-link{
   font-size:13px;
   color:var(--muted);

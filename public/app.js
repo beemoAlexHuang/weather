@@ -1,5 +1,6 @@
 const apiBase = "/api/outfit";
 const KEY = "outfit:lastCoords";
+const RECENT_KEY = "outfit:recentPlaces";
 
 const PLACES = [
   { name: "台北市", lat: 25.032969, lon: 121.565418 },
@@ -33,6 +34,25 @@ function saveCoords(lat, lon, name){
 }
 function loadCoords(){
   try{ return JSON.parse(localStorage.getItem(KEY) || "null"); }catch(e){ return null; }
+}
+
+function loadRecent(){
+  try{ return JSON.parse(localStorage.getItem(RECENT_KEY) || "[]"); }catch(e){ return []; }
+}
+function saveRecent(list){
+  localStorage.setItem(RECENT_KEY, JSON.stringify(list));
+}
+function addRecent(place){
+  if(!place || !place.name) return;
+  const list = loadRecent();
+  const filtered = list.filter(p => p.name !== place.name);
+  filtered.unshift({ name: place.name, lat: place.lat, lon: place.lon });
+  saveRecent(filtered.slice(0, 10));
+}
+function removeRecent(name){
+  const list = loadRecent().filter(p => p.name !== name);
+  saveRecent(list);
+  renderRecent();
 }
 
 function populatePlaces(){
@@ -77,7 +97,6 @@ function renderAlert(periods){
 }
 
 function render(data){
-  setText("raw", JSON.stringify(data, null, 2));
   if(!data || !data.ok){
     setText("summary", "查詢失敗");
     setText("meta", data && data.error ? data.error : "");
@@ -103,8 +122,7 @@ function render(data){
 }
 
 async function callApi(lat, lon){
-  const debug = qs("debug").checked ? "1" : "0";
-  const url = `${apiBase}?lat=${encodeURIComponent(lat)}&lon=${encodeURIComponent(lon)}&debug=${debug}`;
+  const url = `${apiBase}?lat=${encodeURIComponent(lat)}&lon=${encodeURIComponent(lon)}`;
   const res = await fetch(url, { headers: { "Accept": "application/json" }});
   const data = await res.json();
   render(data);
@@ -114,10 +132,26 @@ async function callApi(lat, lon){
 function applyPlace(place){
   if(!place) return;
   saveCoords(place.lat, place.lon, place.name);
+  addRecent(place);
+  renderRecent();
   callApi(place.lat, place.lon).catch(e => render({ ok:false, error:String(e) }));
 }
 
 populatePlaces();
+renderRecent();
+
+function renderRecent(){
+  const el = qs("recentPlaces");
+  const list = loadRecent();
+  if(!list.length){
+    el.innerHTML = "<span class=\"label\">尚無紀錄</span>";
+    return;
+  }
+  el.innerHTML = list.map(p => (
+    `<span class=\"chip-btn\" data-name=\"${p.name}\">${p.name}` +
+    `<button class=\"chip-del\" type=\"button\" aria-label=\"刪除\" data-del=\"${p.name}\">×</button></span>`
+  )).join("");
+}
 
 qs("searchForm").addEventListener("submit", (e) => {
   e.preventDefault();
@@ -141,15 +175,40 @@ qs("btnGeo").onclick = () => {
   );
 };
 
-qs("btnTaipei101").onclick = () => {
-  applyPlace({ name: "台北101", lat: 25.0330, lon: 121.5654 });
-};
+qs("quickPlaces").addEventListener("click", (e) => {
+  const btn = e.target.closest("button[data-place]");
+  if(!btn) return;
+  const name = btn.getAttribute("data-place");
+  const place = findPlace(name);
+  if(place) applyPlace(place);
+});
+
+qs("recentPlaces").addEventListener("click", (e) => {
+  const del = e.target.closest("button[data-del]");
+  if(del){
+    removeRecent(del.getAttribute("data-del"));
+    return;
+  }
+  const chip = e.target.closest("span[data-name]");
+  if(chip){
+    const name = chip.getAttribute("data-name");
+    const place = findPlace(name) || loadRecent().find(p => p.name === name);
+    if(place) applyPlace(place);
+  }
+});
+
+function renderQuickPlaces(){
+  const list = ["台北市", "新北市", "桃園市", "台中市", "台南市", "高雄市", "新竹市", "嘉義市"];
+  qs("quickPlaces").innerHTML = list.map(name =>
+    `<button class=\"chip-btn\" type=\"button\" data-place=\"${name}\">${name}</button>`
+  ).join("");
+}
+renderQuickPlaces();
 
 // 進來先用：URL座標 > localStorage座標
 const params = new URLSearchParams(location.search);
 const pLat = params.get("lat"), pLon = params.get("lon");
 if(pLat && pLon){
-  qs("debug").checked = params.get("debug") === "1";
   saveCoords(Number(pLat), Number(pLon), "");
   callApi(pLat, pLon).catch(e => render({ ok:false, error:String(e) }));
 } else {
