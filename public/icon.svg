@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="outfit">
+  <defs>
+    <linearGradient id="g" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0" stop-color="#111"/>
+      <stop offset="1" stop-color="#444"/>
+    </linearGradient>
+  </defs>
+  <rect x="32" y="32" width="448" height="448" rx="96" fill="url(#g)"/>
+  <path d="M196 160c10-22 30-36 60-36s50 14 60 36l32 26-28 58-22-18v164c0 14-12 26-26 26H240c-14 0-26-12-26-26V226l-22 18-28-58 32-26z"
+        fill="#fff" opacity="0.92"/>
+  <circle cx="256" cy="176" r="18" fill="#fff" opacity="0.92"/>
+</svg>
