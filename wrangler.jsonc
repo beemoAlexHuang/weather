@@ -4,5 +4,9 @@
   "main": "worker.js",
   "assets": {
     "directory": "./public"
+  },
+  "vars": {
+    "CWA_ENDPOINT": "https://opendata.cwa.gov.tw/linked/graphql",
+    "CWA_GQL_QUERY": "query town($Longitude: Float!, $Latitude: Float!) {\n  town(Longitude: $Longitude, Latitude: $Latitude) {\n    ctyName\n    townName\n    villageName\n    forecast72hr {\n      Temperature { Time { DataTime Temperature } }\n      WindSpeed { Time { DataTime WindSpeed } }\n      ComfortIndex { Time { DataTime ComfortIndex ComfortIndexDescription } }\n      ProbabilityOfPrecipitation { Time { StartTime EndTime ProbabilityOfPrecipitation } }\n      WeatherDescription { Time { StartTime EndTime WeatherDescription } }\n    }\n  }\n}\n"
   }
 }
